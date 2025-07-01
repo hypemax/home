@@ -1,0 +1,1076 @@
+<html lang="pt-BR"><head><script>(function(firebaseConfig, initialAuthToken, appId) {
+        window.__firebase_config = firebaseConfig;
+        window.__initial_auth_token = initialAuthToken;
+        window.__app_id = appId;
+            })("\n{\n  \"apiKey\": \"AIzaSyCqyCcs2R2e7AegGjvFAwG98wlamtbHvZY\",\n  \"authDomain\": \"bard-frontend.firebaseapp.com\",\n  \"projectId\": \"bard-frontend\",\n  \"storageBucket\": \"bard-frontend.firebasestorage.app\",\n  \"messagingSenderId\": \"175205271074\",\n  \"appId\": \"1:175205271074:web:2b7bd4d34d33bf38e6ec7b\"\n}\n","eyJhbGciOiJSUzI1NiIsImtpZCI6IjAyNzI1NzgwMjQzZmMwYTYwOGExZjA3MzFiZDAzNmVjODZkYmI4MDciLCJ0eXAiOiJKV1QifQ.eyJzdWIiOiJmaXJlYmFzZS1hZG1pbnNkay1mYnN2Y0BiYXJkLWZyb250ZW5kLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwiYXVkIjoiaHR0cHM6XC9cL2lkZW50aXR5dG9vbGtpdC5nb29nbGVhcGlzLmNvbVwvZ29vZ2xlLmlkZW50aXR5LmlkZW50aXR5dG9vbGtpdC52MS5JZGVudGl0eVRvb2xraXQiLCJ1aWQiOiIwNDQwNjYzNDcxNjU4OTIwOTY1NSIsImlzcyI6ImZpcmViYXNlLWFkbWluc2RrLWZic3ZjQGJhcmQtZnJvbnRlbmQuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLCJjbGFpbXMiOnsiYXBwSWQiOiJjXzM4MDkxNjE3Yjk4MjY1YWJfaHlwZW1heC1jbG9uZS04MzYifSwiZXhwIjoxNzUxMzUwNzQyLCJpYXQiOjE3NTEzNDcxNDIsImFsZyI6IlJTMjU2In0.mzoohBKh4g3kLxuSnSUovrYLZBQuSzpQ0vHY7TK8gAmnQgCRBgducghuZetqnCM9d3LI5dDXjPUng0NnuTghuoORtZKESDkGwzGTHYwJrF1HkFnqfbZlZCcW_pIi1VUPK11A6k2_atMnBZW48RArnVvdluOXrEsZMFiVqVihSVQNPaVuhmHuMVHSDbWgAmgn9MGsOFw0nI2_zgb8TkXnithDQfILkbimu_KbMCoTis6D_pGRtYtMaSk1bf-pGMMHhEHn5suAGAPScDnwc8iAQp4jnJMG9gQ02sJCO_3V4-tgCEOkpP7-XnTIDr8LW3_qjppFcuwLkluBD2RSK4BKWw","c_38091617b98265ab_hypemax-clone-836")</script><script>(function() {
+  // Ensure this script is executed only once
+  if (window.firebaseAuthBridgeScriptLoaded) {
+    return;
+  }
+  window.firebaseAuthBridgeScriptLoaded = true;
+
+  let nextTokenPromiseId = 0;
+
+  // Stores { resolve, reject } for ongoing token requests
+  const pendingTokenPromises = {};
+
+  // Listen for messages from the Host Application
+  window.addEventListener('message', function(event) {
+
+    const messageData = event.data;
+
+  if (messageData && messageData.type === 'RESOLVE_NEW_FIREBASE_TOKEN') {
+      const { success, token, error, promiseId } = messageData ?? {};
+      if (pendingTokenPromises[promiseId]) {
+        if (success) {
+          pendingTokenPromises[promiseId].resolve(token);
+        } else {
+          pendingTokenPromises[promiseId].reject(new Error(error || 'Token refresh failed from host.'));
+        }
+        delete pendingTokenPromises[promiseId];
+      }
+    }
+  });
+
+  // Expose a function for the Generated App to request a new Firebase token
+  window.requestNewFirebaseToken = function() {
+    const currentPromiseId = nextTokenPromiseId++;
+    const promise = new Promise((resolve, reject) => {
+      pendingTokenPromises[currentPromiseId] = { resolve, reject };
+    });
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'REQUEST_NEW_FIREBASE_TOKEN',
+        promiseId: currentPromiseId
+      }, '*');
+    } else {
+      pendingTokenPromises[currentPromiseId].reject(new Error('No parent window to request token from.'));
+      delete pendingTokenPromises[currentPromiseId];
+    }
+    return promise;
+  };
+})();</script><script>
+let realOriginalGetUserMedia = null;
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+  realOriginalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+}
+
+(function() {
+  if (navigator.mediaDevices && navigator.mediaDevices.__proto__) {
+    try {
+      Object.defineProperty(navigator.mediaDevices.__proto__, 'getUserMedia', {
+        get: function() {
+          return undefined; // Or throw an error
+        },
+        configurable: false
+      });
+    } catch (error) {
+      console.error("Error defining prototype getter:", error);
+    }
+  }
+})();
+
+(function() {
+  const pendingMediaResolvers = {};
+  let nextMediaPromiseId = 0;
+
+  function requestMediaPermissions(constraints) {
+    const mediaPromiseId = nextMediaPromiseId++;
+    const promise = new Promise((resolve, reject) => {
+      pendingMediaResolvers[mediaPromiseId] = (granted) => {
+        delete pendingMediaResolvers[mediaPromiseId];
+        resolve(granted);
+      };
+    });
+
+    window.parent.postMessage({
+      type: 'requestMediaPermission',
+      constraints: constraints,
+      promiseId: mediaPromiseId,
+    }, '*');
+
+    return promise;
+  }
+
+  let originalGetUserMedia = realOriginalGetUserMedia;
+
+  function interceptGetUserMedia() {
+    if (navigator.mediaDevices) {
+      Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+        value: function(constraints) {
+          return requestMediaPermissions(constraints).then((granted) => {
+            if (granted) {
+              if (originalGetUserMedia) {
+                return originalGetUserMedia(constraints);
+              } else {
+                throw new Error("Original getUserMedia not available.");
+              }
+            } else {
+              throw new DOMException('Permission denied', 'NotAllowedError');
+            }
+          });
+        },
+        writable: false,
+        configurable: false
+      });
+    }
+  }
+
+  interceptGetUserMedia();
+
+  const observer = new MutationObserver(function(mutationsList, observer) {
+    for (const mutation of mutationsList) {
+      if (mutation.type === 'reconfigured' && mutation.name === 'getUserMedia' && mutation.object === navigator.mediaDevices) {
+        interceptGetUserMedia();
+      } else if (mutation.type === 'attributes' && mutation.attributeName === 'getUserMedia' && mutation.target === navigator.mediaDevices) {
+        interceptGetUserMedia();
+      } else if (mutation.type === 'childList' && mutation.addedNodes) {
+        mutation.addedNodes.forEach(node => {
+          if (node === navigator.mediaDevices) {
+            interceptGetUserMedia();
+          }
+        });
+      }
+    }
+  });
+
+  function interceptSpeechRecognition() {
+    if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+      return;
+    }
+
+    const OriginalSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    const SpeechRecognitionWrapper = function(...args) {
+      const recognizer = new OriginalSpeechRecognition(...args);
+      const originalStart = recognizer.start.bind(recognizer);
+
+      recognizer.start = function() {
+        requestMediaPermissions({ audio: true }).then(granted => {
+          if (granted) {
+            originalStart();
+          } else {
+            const errorEvent = new SpeechRecognitionErrorEvent('error');
+            errorEvent.error = 'not-allowed'; // This is the standard error for permission denial.
+            recognizer.dispatchEvent(errorEvent);
+          }
+        });
+      };
+
+      return recognizer;
+    };
+
+    SpeechRecognitionWrapper.prototype = OriginalSpeechRecognition.prototype;
+    SpeechRecognitionWrapper.prototype.constructor = SpeechRecognitionWrapper;
+
+    if (window.SpeechRecognition) {
+      window.SpeechRecognition = SpeechRecognitionWrapper;
+    }
+    if (window.webkitSpeechRecognition) {
+      window.webkitSpeechRecognition = SpeechRecognitionWrapper;
+    }
+  }
+
+  interceptSpeechRecognition();
+
+  window.addEventListener('message', function(event) {
+    if (event.data) {
+      if (event.data.type === 'resolveMediaPermission') {
+        const { promiseId, granted } = event.data;
+        if (pendingMediaResolvers[promiseId]) {
+          pendingMediaResolvers[promiseId](granted);
+        }
+      }
+    }
+  });
+
+})();</script><script>((function(modelInformation) {
+  const originalFetch = window.fetch;
+  // TODO: b/421908508 - Move these out of the script and match all generative AI model calls.
+  let googleLlmBaseApiUrls = [
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.textModelName + ':streamGenerateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.textModelName + ':generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageModelName + ':predict',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageModelName + ':predictLongRunning',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageEditModelName + ':generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.videoModelName + ':predict',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.videoModelName + ':predictLongRunning',
+  ];
+  modelInformation.deprecatedTextModelNames.forEach((modelName) => {
+    googleLlmBaseApiUrls.push(
+      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':streamGenerateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':generateContent',
+    );
+  });
+
+  const pendingFetchResolvers = {};
+  let nextPromiseId = 0;
+
+  function handleStringInput(input, optionsArgument) {
+    const actualUrl = input;
+    const fetchCallArgs = [actualUrl, optionsArgument];
+    const effectiveOptions = optionsArgument || {};
+    const bodyForApiKeyCheck = effectiveOptions.body;
+    const bodyForPostMessage = effectiveOptions.body;
+    return { actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage };
+  }
+
+  function handleRequestInput(input, optionsArgument) {
+    const actualUrl = input.url;
+    const fetchCallArgs = [input, optionsArgument];
+    const effectiveOptions = { method: input.method, headers: new Headers(input.headers) };
+    let bodyForApiKeyCheck;
+    let bodyForPostMessage;
+
+    if (optionsArgument) {
+      if (optionsArgument.method) effectiveOptions.method = optionsArgument.method;
+      if (optionsArgument.headers) effectiveOptions.headers = new Headers(optionsArgument.headers);
+      if ('body' in optionsArgument) {
+        bodyForApiKeyCheck = optionsArgument.body;
+        bodyForPostMessage = optionsArgument.body;
+      } else {
+        bodyForApiKeyCheck = undefined;
+        bodyForPostMessage = input.body;
+      }
+    } else {
+      bodyForApiKeyCheck = undefined;
+      bodyForPostMessage = input.body;
+    }
+    return { actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage };
+  }
+
+  window.fetch = function(input, optionsArgument) {
+    let actualUrl;
+    let fetchCallArgs;
+    let effectiveOptions = {};
+    let bodyForApiKeyCheck;
+    let bodyForPostMessage;
+
+    if (typeof input === 'string') {
+      ({actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage} = handleStringInput(input, optionsArgument));
+    } else if (input instanceof Request) {
+      ({actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage} = handleRequestInput(input, optionsArgument));
+    } else {
+      return originalFetch.apply(window, [input, optionsArgument]);
+    }
+
+    effectiveOptions.method = effectiveOptions.method || 'GET';
+    if (!effectiveOptions.headers) {
+      effectiveOptions.headers = new Headers();
+    }
+
+
+    if (typeof actualUrl === 'string' && googleLlmBaseApiUrls.some((url) => actualUrl.startsWith(url))) {
+      let apiKeyIsNull = true;
+
+      const regex = new RegExp("models/([^:]+)");
+      const modelNameMatch = actualUrl.match(regex);
+      const modelName = modelNameMatch ? modelNameMatch[1] : 'unspecified';
+
+
+      try {
+        const urlObject = new URL(actualUrl);  // Use URL object for robust parsing
+        const apiKeyParam = urlObject.searchParams.get('key');
+        if (apiKeyParam) {
+          apiKeyIsNull = false;
+        }
+      } catch (e) {
+        // Continue checks even if URL parsing fails
+      }
+
+      if (apiKeyIsNull && effectiveOptions.headers) {
+        const h = new Headers(effectiveOptions.headers);
+        const apiKeyHeaderValue = h.get('X-API-Key') || h.get('x-api-key');
+        if (apiKeyHeaderValue) {
+          apiKeyIsNull = false;
+          return originalFetch.apply(window, fetchCallArgs);
+        }
+      }
+
+      if (apiKeyIsNull && effectiveOptions.method && ['POST', 'PUT', 'PATCH'].includes(effectiveOptions.method.toUpperCase()) && typeof bodyForApiKeyCheck === 'string') {
+        try {
+          const bodyData = JSON.parse(bodyForApiKeyCheck);
+          if (bodyData && bodyData.apiKey) {
+            apiKeyIsNull = false;
+            return originalFetch.apply(window, fetchCallArgs);
+          }
+        } catch (e) {
+          // Ignore JSON parsing errors
+        }
+      }
+
+      if(apiKeyIsNull) {
+        const promiseId = nextPromiseId++;
+        const promise = new Promise((resolve) => {
+          pendingFetchResolvers[promiseId] = (resolvedResponse) => {
+            delete pendingFetchResolvers[promiseId];
+            resolve(resolvedResponse);
+          };
+        });
+
+        let serializedBodyForPostMessage;
+        if (typeof bodyForPostMessage === 'string' || bodyForPostMessage == null) {
+            serializedBodyForPostMessage = bodyForPostMessage;
+        } else if (bodyForPostMessage instanceof ReadableStream) {
+            serializedBodyForPostMessage = null;
+        } else {
+            try {
+                serializedBodyForPostMessage = JSON.stringify(bodyForPostMessage);
+            } catch (e) {
+                serializedBodyForPostMessage = null;
+            }
+        }
+
+        const messageOptions = {
+            method: effectiveOptions.method,
+            headers: Object.fromEntries(new Headers(effectiveOptions.headers).entries()),
+            body: serializedBodyForPostMessage
+        };
+
+        window.parent.postMessage({
+          type: 'requestFetch',
+          url: actualUrl,
+          modelName: modelName,
+          options: messageOptions,
+          promiseId: promiseId,
+        }, '*');
+
+        return promise;
+      }
+      return originalFetch.apply(window, fetchCallArgs);
+    }
+    return originalFetch.apply(window, fetchCallArgs);
+  };
+
+  window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'resolveFetch') {
+      const { promiseId, response } = event.data;
+      if (pendingFetchResolvers[promiseId]) {
+        try {
+          const reconstructedResponse = new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: new Headers(response.headers),
+          });
+          pendingFetchResolvers[promiseId](reconstructedResponse);
+        } catch (error) {
+          pendingFetchResolvers[promiseId](new Response(null, { status: 500, statusText: "Interceptor Response Reconstruction Error" }));
+        }
+      }
+    }
+  });
+
+}))({"textModelName":"gemini-2.5-flash-preview-04-17","imageModelName":"imagen-3.0-generate-002","imageEditModelName":"gemini-2.0-flash-preview-image-generation","videoModelName":"veo-2.0-generate-001","deprecatedTextModelNames":["gemini-2.0-flash"]})</script><script>(function() {
+  const originalConsoleLog = console.log;
+  const originalConsoleError = console.error;
+
+    /**
+   * Normalizes an error event or a promise rejection reason into a structured error object.
+   * @param {*} errorEventOrReason The error object or reason.
+   * @return {object} Structured error data { message, name, stack }.
+   */
+  function getErrorObject(errorEventOrReason) {
+    if (errorEventOrReason instanceof Error) {
+      return {
+        message: errorEventOrReason.message,
+        name: errorEventOrReason.name,
+        stack: errorEventOrReason.stack,
+      };
+    }
+    // Fallback for non-Error objects.
+    try {
+      return {
+        message: JSON.stringify(errorEventOrReason),
+        name: 'UnknownErrorType',
+        stack: null,
+      };
+    } catch (e) {
+      return {
+        message: String(errorEventOrReason),
+        name: 'UnknownErrorTypeNonStringifiable',
+        stack: null,
+      };
+    }
+  }
+
+  /**
+   * Converts an array of arguments (from log/error) into a single string.
+   * Handles Error objects specially to include their message and stack.
+   * @param {Array<*>} args - Arguments passed to console methods.
+   * @return {string} A string representation of the arguments.
+   */
+  function stringifyArgs(args) {
+    return args
+      .map((arg) => {
+        if (arg instanceof Error) {
+          const {message, stack} = arg;
+          return `Error: ${message}${stack ? ('\nStack: ' + stack) : ''}`;
+        }
+        if (typeof arg === 'object' && arg !== null) {
+          try {
+            return JSON.stringify(arg);
+          } catch (error) {
+            return '[Circular Object]';
+          }
+        } else {
+          return String(arg);
+        }
+      })
+      .join(' ');
+  }
+
+  console.log = function(...args) {
+    const logString = stringifyArgs(args);
+    window.parent.postMessage({ type: 'log', message: logString }, '*');
+    originalConsoleLog.apply(console, args);
+  };
+
+  console.error = function(...args) {
+    let errorData;
+    if (args.length > 0 && args[0] instanceof Error) {
+      const err = args[0];
+      // If the first arg is an Error, capture its details.
+      errorData = {
+        type: 'error',
+        source: 'CONSOLE_ERROR',
+        ...getErrorObject(err),
+        rawArgsString: stringifyArgs(args.slice(1)),
+        timestamp: new Date().toISOString(),
+      };
+    } else {
+      // If not an Error object, treat all args as a general error message.
+      errorData = {
+        type: 'error',
+        source: 'CONSOLE_ERROR',
+        message: stringifyArgs(args),
+        name: 'ConsoleLoggedError',
+        stack: null,
+        timestamp: new Date().toISOString(),
+      };
+    }
+    window.parent.postMessage(errorData, '*');
+    originalConsoleError.apply(console, args);
+  };
+
+  // Listen for global unhandled synchronous errors.
+  window.addEventListener('error', function(event) {
+    const errorDetails = event.error ? getErrorObject(event.error) : {
+      message: event.message,
+      name: 'GlobalError',
+      stack: null,
+      filename: event.filename,
+      lineno: event.lineno,
+      colno: event.colno,
+    };
+
+    window.parent.postMessage({
+      type: 'error',
+      source: 'global',
+      ...errorDetails,
+      message: errorDetails.message || event.message,
+      timestamp: new Date().toISOString(),
+    }, '*');
+  });
+
+  // Listen for unhandled promise rejections (asynchronous errors).
+  window.addEventListener('unhandledrejection', function(event) {
+    const errorDetails = getErrorObject(event.reason);
+
+    window.parent.postMessage({
+      type: 'error',
+      source: 'unhandledrejection',
+      ...errorDetails,
+      message: errorDetails.message || 'Unhandled Promise Rejection',
+      timestamp: new Date().toISOString(),
+    }, '*');
+  });
+
+})();</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HypeMax</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+    <style>
+        /* Estilo customizado para a fonte e scrollbar */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
+        }
+        /* Esconde a scrollbar mas permite a rolagem */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        /* Gradiente de fundo para o conteúdo principal */
+        .hero-gradient {
+            background: linear-gradient(to right, rgba(0,0,0,0.9) 25%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.1) 75%, transparent 100%);
+        }
+        .bottom-gradient {
+             background: linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 100%);
+        }
+        /* Estilo para os números do Top 10 */
+        .top-10-number {
+            font-size: 11rem;
+            font-weight: 900;
+            color: #111827;
+            -webkit-text-stroke: 3px #4b5563;
+            line-height: .8;
+            text-shadow: -2px 2px 4px rgba(0,0,0,0.5);
+        }
+        /* Estilo para o ícone de play */
+        .play-icon {
+            filter: invert(1) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+        }
+        /* Plugin para aspect-ratio do Tailwind */
+        @layer base {
+          .aspect-w-16 {
+            position: relative;
+            padding-bottom: 56.25%;
+          }
+          .aspect-w-16 > * {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+          }
+        }
+        /* Animação da seta de temporadas */
+        .rotate-180 {
+            transform: rotate(180deg);
+        }
+        /* Animação de cascata para a lista de temporadas */
+        @keyframes cascade-in {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .cascade-item {
+            animation: cascade-in 0.4s ease-out forwards;
+        }
+    </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.16 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0px}.bottom-0{bottom:0px}.left-0{left:0px}.left-24{left:6rem}.left-6{left:1.5rem}.right-0{right:0px}.right-4{right:1rem}.top-0{top:0px}.top-4{top:1rem}.top-8{top:2rem}.bottom-5{bottom:1.25rem}.left-1\/2{left:50%}.z-10{z-index:10}.z-20{z-index:20}.z-30{z-index:30}.z-40{z-index:40}.z-50{z-index:50}.my-4{margin-top:1rem;margin-bottom:1rem}.-ml-10{margin-left:-2.5rem}.mb-10{margin-bottom:2.5rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.mt-12{margin-top:3rem}.mt-2{margin-top:0.5rem}.mt-6{margin-top:1.5rem}.mt-8{margin-top:2rem}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-14{height:3.5rem}.h-16{height:4rem}.h-20{height:5rem}.h-40{height:10rem}.h-48{height:12rem}.h-5{height:1.25rem}.h-auto{height:auto}.h-full{height:100%}.h-screen{height:100vh}.h-12{height:3rem}.max-h-\[85vh\]{max-height:85vh}.max-h-\[calc\(100vh-150px\)\]{max-height:calc(100vh - 150px)}.min-h-\[65vh\]{min-height:65vh}.w-14{width:3.5rem}.w-16{width:4rem}.w-20{width:5rem}.w-32{width:8rem}.w-48{width:12rem}.w-5{width:1.25rem}.w-64{width:16rem}.w-full{width:100%}.w-12{width:3rem}.max-w-xl{max-width:36rem}.flex-shrink-0{flex-shrink:0}.-translate-x-full{--tw-translate-x:-100%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.translate-y-full{--tw-translate-y:100%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.-translate-x-1\/2{--tw-translate-x:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.transform{transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.cursor-pointer{cursor:pointer}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.flex-col{flex-direction:column}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-4{gap:1rem}.gap-8{gap:2rem}.gap-2{gap:0.5rem}.space-x-2 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.5rem * var(--tw-space-x-reverse));margin-left:calc(0.5rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-4 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(1rem * var(--tw-space-x-reverse));margin-left:calc(1rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-8 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(2rem * var(--tw-space-x-reverse));margin-left:calc(2rem * calc(1 - var(--tw-space-x-reverse)))}.space-y-1 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.25rem * var(--tw-space-y-reverse))}.space-y-8 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(2rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(2rem * var(--tw-space-y-reverse))}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.overflow-y-hidden{overflow-y:hidden}.rounded{border-radius:0.25rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-md{border-radius:0.375rem}.rounded-sm{border-radius:0.125rem}.rounded-t-2xl{border-top-left-radius:1rem;border-top-right-radius:1rem}.border{border-width:1px}.border-2{border-width:2px}.border-b-2{border-bottom-width:2px}.border-gray-400{--tw-border-opacity:1;border-color:rgb(156 163 175 / var(--tw-border-opacity, 1))}.border-gray-700{--tw-border-opacity:1;border-color:rgb(55 65 81 / var(--tw-border-opacity, 1))}.border-white{--tw-border-opacity:1;border-color:rgb(255 255 255 / var(--tw-border-opacity, 1))}.bg-black{--tw-bg-opacity:1;background-color:rgb(0 0 0 / var(--tw-bg-opacity, 1))}.bg-gray-500{--tw-bg-opacity:1;background-color:rgb(107 114 128 / var(--tw-bg-opacity, 1))}.bg-gray-700{--tw-bg-opacity:1;background-color:rgb(55 65 81 / var(--tw-bg-opacity, 1))}.bg-gray-800\/95{background-color:rgb(31 41 55 / 0.95)}.bg-gray-900\/80{background-color:rgb(17 24 39 / 0.8)}.bg-red-600{--tw-bg-opacity:1;background-color:rgb(220 38 38 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-opacity-30{--tw-bg-opacity:0.3}.bg-opacity-40{--tw-bg-opacity:0.4}.bg-opacity-50{--tw-bg-opacity:0.5}.bg-cover{background-size:cover}.bg-center{background-position:center}.object-cover{object-fit:cover}.p-2{padding:0.5rem}.p-3{padding:0.75rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.py-0\.5{padding-top:0.125rem;padding-bottom:0.125rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-6{padding-top:1.5rem;padding-bottom:1.5rem}.pb-2{padding-bottom:0.5rem}.pb-4{padding-bottom:1rem}.pb-8{padding-bottom:2rem}.pl-24{padding-left:6rem}.pr-4{padding-right:1rem}.pt-24{padding-top:6rem}.text-2xl{font-size:1.5rem;line-height:2rem}.text-4xl{font-size:2.25rem;line-height:2.5rem}.text-5xl{font-size:3rem;line-height:1}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.font-black{font-weight:900}.font-bold{font-weight:700}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.tracking-tighter{letter-spacing:-0.05em}.tracking-widest{letter-spacing:0.1em}.text-black{--tw-text-opacity:1;color:rgb(0 0 0 / var(--tw-text-opacity, 1))}.text-gray-300{--tw-text-opacity:1;color:rgb(209 213 219 / var(--tw-text-opacity, 1))}.text-gray-400{--tw-text-opacity:1;color:rgb(156 163 175 / var(--tw-text-opacity, 1))}.text-green-400{--tw-text-opacity:1;color:rgb(74 222 128 / var(--tw-text-opacity, 1))}.text-red-600{--tw-text-opacity:1;color:rgb(220 38 38 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.opacity-0{opacity:0}.backdrop-blur-lg{--tw-backdrop-blur:blur(16px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-colors{transition-property:color, background-color, border-color, fill, stroke, -webkit-text-decoration-color;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, -webkit-text-decoration-color;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-opacity{transition-property:opacity;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-transform{transition-property:transform;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-300{transition-duration:300ms}.duration-500{transition-duration:500ms}.ease-in-out{transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1)}.hover\:border-white:hover{--tw-border-opacity:1;border-color:rgb(255 255 255 / var(--tw-border-opacity, 1))}.hover\:bg-gray-200:hover{--tw-bg-opacity:1;background-color:rgb(229 231 235 / var(--tw-bg-opacity, 1))}.hover\:bg-white:hover{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.hover\:bg-opacity-70:hover{--tw-bg-opacity:0.7}.hover\:text-gray-300:hover{--tw-text-opacity:1;color:rgb(209 213 219 / var(--tw-text-opacity, 1))}.hover\:text-white:hover{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.hover\:text-black:hover{--tw-text-opacity:1;color:rgb(0 0 0 / var(--tw-text-opacity, 1))}.hover\:text-red-500:hover{--tw-text-opacity:1;color:rgb(239 68 68 / var(--tw-text-opacity, 1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.focus\:ring-2:focus{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.focus\:ring-red-500:focus{--tw-ring-opacity:1;--tw-ring-color:rgb(239 68 68 / var(--tw-ring-opacity, 1))}.group:hover .group-hover\:scale-110{--tw-scale-x:1.1;--tw-scale-y:1.1;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.group:hover .group-hover\:opacity-100{opacity:1}@media (min-width: 640px){.sm\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}}@media (min-width: 768px){.md\:left-28{left:7rem}.md\:h-60{height:15rem}.md\:w-1\/3{width:33.333333%}.md\:w-2\/3{width:66.666667%}.md\:w-3\/5{width:60%}.md\:w-40{width:10rem}.md\:w-72{width:18rem}.md\:flex-row{flex-direction:row}.md\:pl-28{padding-left:7rem}.md\:pr-8{padding-right:2rem}.md\:pt-32{padding-top:8rem}.md\:text-2xl{font-size:1.5rem;line-height:2rem}.md\:text-6xl{font-size:3.75rem;line-height:1}.md\:text-lg{font-size:1.125rem;line-height:1.75rem}}@media (min-width: 1024px){.lg\:left-32{left:8rem}.lg\:w-2\/5{width:40%}.lg\:pl-32{padding-left:8rem}.lg\:pr-12{padding-right:3rem}.lg\:pt-40{padding-top:10rem}.lg\:text-7xl{font-size:4.5rem;line-height:1}}</style></head>
+<body class="bg-black text-white">
+
+    <!-- Container Principal -->
+    <div class="relative w-full">
+        <!-- Imagem de Fundo -->
+        <div class="absolute inset-0 h-screen">
+            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgcXDJrUNE8C6dT6dg8xSlYjwPhdO2QWborLcgn-M4ROEwonl7iiJJQTUUlRJnQyirroAk2tGMCX3kBJSn2pMGqotrGcnvQzWTzTDBjcD2uB1fxubO-1YHDLlZeXgLRsao0CfAzZHxu81czDxjs8h9mAeNeiDyfVF0sUw8c2pnd3fm7fOfUfJov-FKZA0Lz/s1920/round-6-season-2-capa.jpg" alt="Imagem de fundo da série Round 6" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/2070x1164/000000/ffffff?text=Background+Image';">
+            <!-- Overlay de gradiente -->
+            <div class="absolute inset-0 hero-gradient"></div>
+            <div class="absolute bottom-0 left-0 right-0 h-40 bottom-gradient"></div>
+        </div>
+
+        <!-- Barra de Navegação Lateral -->
+        <nav class="fixed top-0 left-0 h-full w-20 bg-black bg-opacity-30 backdrop-blur-sm flex flex-col items-center py-6 z-30">
+            <!-- Logo -->
+            <div class="mb-10">
+                 <h1 class="text-2xl font-black tracking-tighter">
+                    <span class="text-red-600">H</span><span class="text-white">M</span>
+                </h1>
+            </div>
+            <!-- Ícones de Navegação -->
+            <div class="flex flex-col space-y-8">
+                <a href="#" id="search-icon" class="text-gray-400 hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </a>
+                <a href="#" class="text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                </a>
+            </div>
+        </nav>
+
+        <!-- Conteúdo Principal -->
+        <main class="relative pl-24 md:pl-28 lg:pl-32 pr-4 md:pr-8 lg:pr-12 pt-24 md:pt-32 lg:pt-40 z-10">
+            
+            <!-- Seção Hero -->
+            <div id="hero-content" class="min-h-[65vh] movie-card" data-title="Round 6" data-poster="https://scontent-gru2-1.xx.fbcdn.net/v/t39.30808-6/243102424_101211332335997_4237371417244492549_n.jpg?_nc_cat=107&amp;ccb=1-7&amp;_nc_sid=6ee11a&amp;_nc_ohc=Ya9FrVTige0Q7kNvwEiCKjr&amp;_nc_oc=AdlGzWevMAf5-dVp_Qq4YU52kztTX-NCEJYhp8BCf5DJ0E82zvxVQRFTOmyCKynN5qLnmXOPhEl6mXYspuzrO858&amp;_nc_zt=23&amp;_nc_ht=scontent-gru2-1.xx&amp;_nc_gid=EJMTSe-E8mbT9Tl1DUVF1g&amp;oh=00_AfO5aud9OhtLNb5eZTsjl21aZ52SOww_yDdGUpAAKxBYHg&amp;oe=686934E4" data-description="Centenas de jogadores falidos aceitam um estranho convite para um jogo de sobrevivência. Um prémio milionário aguarda, mas as apostas são altas e mortais." data-trailer-id="bv2UYW0O9Bc" data-color-from="rgba(219, 52, 112, 0.7)" data-color-to="rgba(4, 119, 129, 0.7)" data-seasons="3">
+                <div class="w-full md:w-3/5 lg:w-2/5">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-5 h-5 bg-red-600 flex items-center justify-center rounded-sm">
+                             <h2 class="text-white font-black text-sm">H</h2>
+                        </div>
+                        <span class="text-gray-300 font-semibold tracking-widest text-sm">SÉRIE</span>
+                    </div>
+                    
+                    <h1 class="text-5xl md:text-6xl lg:text-7xl font-black uppercase text-white my-4" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.7);">
+                        Round 6
+                    </h1>
+
+                    <div class="flex items-center space-x-4 my-4">
+                        <div class="font-bold text-green-400">99% Relevante</div>
+                        <div class="text-gray-300">2021</div>
+                        <div class="border border-gray-400 text-gray-300 px-2 py-0.5 text-sm rounded">
+                            18+
+                        </div>
+                        <div class="text-gray-300">3 Temporadas</div>
+                    </div>
+
+                    <p class="text-base md:text-lg text-white max-w-xl">
+                        Centenas de jogadores falidos aceitam um estranho convite para um jogo de sobrevivência. Um prémio milionário aguarda, mas as apostas são altas e mortais.
+                    </p>
+
+                    <div class="flex items-center space-x-4 mt-8">
+                        <button id="hero-watch-button" class="bg-white text-black font-bold py-3 rounded-md flex justify-center items-center hover:bg-gray-200 transition-colors w-48 relative">
+                            <div class="absolute left-6">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="text-black"><path d="M8 5v14l11-7z"></path></svg>
+                            </div>
+                            <span>Assistir</span>
+                        </button>
+                        <button class="bg-gray-500 bg-opacity-50 text-white font-bold py-3 rounded-md flex justify-center items-center hover:bg-opacity-70 transition-opacity backdrop-blur-sm w-48">
+                            <span>Mais Informações</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção de Filas de Conteúdo -->
+            <div id="content-section" class="pb-8">
+                <!-- Fila 1: Top 10 -->
+                <div class="mt-12">
+                    <h3 class="text-xl md:text-2xl font-bold text-white mb-8">Top 10 no Brasil hoje</h3>
+                    <div class="flex space-x-8 overflow-x-auto overflow-y-hidden pb-4 no-scrollbar">
+                        <!-- Card Top 10 -->
+                        <div class="flex-shrink-0 flex items-end group movie-card cursor-pointer" data-title="Round 6" data-poster="https://scontent-gru2-1.xx.fbcdn.net/v/t39.30808-6/243102424_101211332335997_4237371417244492549_n.jpg?_nc_cat=107&amp;ccb=1-7&amp;_nc_sid=6ee11a&amp;_nc_ohc=Ya9FrVTige0Q7kNvwEiCKjr&amp;_nc_oc=AdlGzWevMAf5-dVp_Qq4YU52kztTX-NCEJYhp8BCf5DJ0E82zvxVQRFTOmyCKynN5qLnmXOPhEl6mXYspuzrO858&amp;_nc_zt=23&amp;_nc_ht=scontent-gru2-1.xx&amp;_nc_gid=EJMTSe-E8mbT9Tl1DUVF1g&amp;oh=00_AfO5aud9OhtLNb5eZTsjl21aZ52SOww_yDdGUpAAKxBYHg&amp;oe=686934E4" data-description="Centenas de jogadores falidos aceitam um estranho convite para um jogo de sobrevivência. Um prémio milionário aguarda, mas as apostas são altas e mortais." data-trailer-id="bv2UYW0O9Bc" data-color-from="rgba(219, 52, 112, 0.7)" data-color-to="rgba(4, 119, 129, 0.7)" data-seasons="3" data-direct-season="3">
+                            <span class="top-10-number">1</span>
+                            <div class="relative w-32 md:w-40 h-48 md:h-60 rounded-lg overflow-hidden -ml-10 z-10">
+                                <img src="https://scontent-gru2-1.xx.fbcdn.net/v/t39.30808-6/243102424_101211332335997_4237371417244492549_n.jpg?_nc_cat=107&amp;ccb=1-7&amp;_nc_sid=6ee11a&amp;_nc_ohc=Ya9FrVTige0Q7kNvwEiCKjr&amp;_nc_oc=AdlGzWevMAf5-dVp_Qq4YU52kztTX-NCEJYhp8BCf5DJ0E82zvxVQRFTOmyCKynN5qLnmXOPhEl6mXYspuzrO858&amp;_nc_zt=23&amp;_nc_ht=scontent-gru2-1.xx&amp;_nc_gid=EJMTSe-E8mbT9Tl1DUVF1g&amp;oh=00_AfO5aud9OhtLNb5eZTsjl21aZ52SOww_yDdGUpAAKxBYHg&amp;oe=686934E4" alt="Pôster de Round 6" class="w-full h-full object-cover transition-transform duration-300 transform group-hover:scale-110" onerror="this.onerror=null;this.src='https://placehold.co/160x240/1a1a1a/ffffff?text=Round+6';">
+                                <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/2469/2469072.png" alt="Play Icon" class="w-14 h-14 play-icon">
+                                </div>
+                            </div>
+                        </div>
+                         <div class="flex-shrink-0 flex items-end group movie-card cursor-pointer" data-title="Capitão América: Admirável Mundo Novo" data-poster="https://musicart.xboxlive.com/7/3d0c6e00-0000-0000-0000-000000000002/504/image.jpg" data-description="Sam Wilson assume o manto do Capitão América, enfrentando novas ameaças globais que testarão seus limites e sua liderança." data-trailer-id="3akG4eipfmQ" data-color-from="rgba(19, 78, 168, 0.7)" data-color-to="rgba(157, 21, 30, 0.7)">
+                            <span class="top-10-number">2</span>
+                             <div class="relative w-32 md:w-40 h-48 md:h-60 rounded-lg overflow-hidden -ml-10 z-10">
+                                <img src="https://musicart.xboxlive.com/7/3d0c6e00-0000-0000-0000-000000000002/504/image.jpg" alt="Pôster de Capitão América: Admirável Mundo Novo" class="w-full h-full object-cover transition-transform duration-300 transform group-hover:scale-110" onerror="this.onerror=null;this.src='https://placehold.co/160x240/2a2a2a/ffffff?text=Capitão+América';">
+                                <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/2469/2469072.png" alt="Play Icon" class="w-14 h-14 play-icon">
+                                </div>
+                            </div>
+                        </div>
+                         <div class="flex-shrink-0 flex items-end group movie-card cursor-pointer" data-title="M3GAN 2.0" data-poster="https://cinemaritanhaem.com.br/wp-content/uploads/2025/06/megan-1.jpg" data-description="A boneca de inteligência artificial está de volta, mais inteligente e perigosa do que nunca." data-trailer-id="o94Qzn9QJbs" data-color-from="rgba(168, 85, 247, 0.7)" data-color-to="rgba(126, 34, 206, 0.7)">
+                            <span class="top-10-number">3</span>
+                             <div class="relative w-32 md:w-40 h-48 md:h-60 rounded-lg overflow-hidden -ml-10 z-10">
+                                <img src="https://cinemaritanhaem.com.br/wp-content/uploads/2025/06/megan-1.jpg" alt="Pôster de Megan 2.0" class="w-full h-full object-cover transition-transform duration-300 transform group-hover:scale-110" onerror="this.onerror=null;this.src='https://placehold.co/160x240/3a3a3a/ffffff?text=Megan+2.0';">
+                                <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/2469/2469072.png" alt="Play Icon" class="w-14 h-14 play-icon">
+                                </div>
+                            </div>
+                        </div>
+                         <div class="flex-shrink-0 flex items-end group movie-card cursor-pointer" data-title="Gladiador 2" data-poster="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCoNT32Mbfkizgv3dwLjP12Hwprp3v_3xRyjFAbKmCjhxdKeqY1Da4EVwF8a3n0LMd8S0&amp;usqp=CAU" data-description="A saga continua. Anos após os eventos do primeiro filme, um novo herói surge na arena para lutar por honra e liberdade." data-trailer-id="64xsfFUy4cA" data-color-from="rgba(215, 142, 65, 0.7)" data-color-to="rgba(95, 62, 25, 0.7)">
+                            <span class="top-10-number">4</span>
+                             <div class="relative w-32 md:w-40 h-48 md:h-60 rounded-lg overflow-hidden -ml-10 z-10">
+                                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCoNT32Mbfkizgv3dwLjP12Hwprp3v_3xRyjFAbKmCjhxdKeqY1Da4EVwF8a3n0LMd8S0&amp;usqp=CAU" alt="Pôster de Gladiador 2" class="w-full h-full object-cover transition-transform duration-300 transform group-hover:scale-110" onerror="this.onerror=null;this.src='https://placehold.co/160x240/4a4a4a/ffffff?text=Gladiador+2';">
+                                <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/2469/2469072.png" alt="Play Icon" class="w-14 h-14 play-icon">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 flex items-end group movie-card cursor-pointer" data-title="The Last of Us" data-poster="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiSgLlHYn_mKRw10KmCqiAIV4njAeRibRQGZvhqsBHKyyJcURF4y9-XlFULYfMF6VgYc0GPYS9qDciHtIxPmNtkECdOH0oMLRPbUMFNT38sppj9SlPfNaAhBWtN6e-LAttHBVL1M2ogMBluMzyt9HXL1p_JysawAJZxS1UZ8H1r0XhjsQRs9cY1uXaqvw/s1920/THE%20LAST%20OF%20US%20HBO%20WALLPAPER%204K.webp" data-description="A jornada de Ellie e Joel continua, enfrentando novos perigos e dilemas morais em um mundo pós-apocalíptico." data-trailer-id="oh9ugrbhL-A" data-color-from="rgba(67, 160, 71, 0.7)" data-color-to="rgba(51, 51, 51, 0.8)">
+                            <span class="top-10-number">5</span>
+                             <div class="relative w-32 md:w-40 h-48 md:h-60 rounded-lg overflow-hidden -ml-10 z-10">
+                                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiSgLlHYn_mKRw10KmCqiAIV4njAeRibRQGZvhqsBHKyyJcURF4y9-XlFULYfMF6VgYc0GPYS9qDciHtIxPmNtkECdOH0oMLRPbUMFNT38sppj9SlPfNaAhBWtN6e-LAttHBVL1M2ogMBluMzyt9HXL1p_JysawAJZxS1UZ8H1r0XhjsQRs9cY1uXaqvw/s1920/THE%20LAST%20OF%20US%20HBO%20WALLPAPER%204K.webp" alt="Pôster de The Last of Us" class="w-full h-full object-cover transition-transform duration-300 transform group-hover:scale-110" onerror="this.onerror=null;this.src='https://placehold.co/160x240/5a5a5a/ffffff?text=The+Last+of+Us';">
+                                <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/2469/2469072.png" alt="Play Icon" class="w-14 h-14 play-icon">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 flex items-end group movie-card cursor-pointer" data-title="Stranger Things" data-poster="https://placehold.co/160x240/6a6a6a/ffffff?text=Stranger+Things" data-description="A temporada final. Eleven e seus amigos se preparam para a batalha final contra o Mundo Invertido para salvar Hawkins e o mundo." data-trailer-id="rjmRO1v_qVE" data-color-from="rgba(186, 25, 25, 0.7)" data-color-to="rgba(0, 0, 0, 0.8)">
+                            <span class="top-10-number">6</span>
+                             <div class="relative w-32 md:w-40 h-48 md:h-60 rounded-lg overflow-hidden -ml-10 z-10">
+                                <img src="https://placehold.co/160x240/6a6a6a/ffffff?text=Stranger+Things" alt="Pôster de Stranger Things" class="w-full h-full object-cover transition-transform duration-300 transform group-hover:scale-110" onerror="this.onerror=null;this.src='https://placehold.co/160x240/6a6a6a/ffffff?text=Stranger+Things';">
+                                <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/2469/2469072.png" alt="Play Icon" class="w-14 h-14 play-icon">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                 <!-- Fila 2: Em Alta -->
+                <div class="mt-8">
+                    <h3 class="text-xl md:text-2xl font-bold text-white mb-4">Em Alta em 2025</h3>
+                    <div class="flex space-x-4 overflow-x-auto overflow-y-hidden pb-4 no-scrollbar">
+                        <div class="relative flex-shrink-0 w-64 md:w-72 group rounded-lg overflow-hidden movie-card cursor-pointer" data-title="Lilo &amp; Stitch" data-poster="https://placehold.co/500x281/1e1e1e/ffffff?text=Lilo+%26+Stitch" data-description="A amada história de uma jovem e seu amigo extraterrestre ganha vida em uma nova aventura live-action." data-trailer-id="6jBPUTEbo2o" data-color-from="rgba(37, 99, 235, 0.7)" data-color-to="rgba(219, 39, 119, 0.7)">
+                            <img src="https://placehold.co/500x281/1e1e1e/ffffff?text=Lilo+%26+Stitch" alt="Pôster de Lilo &amp; Stitch" class="w-full h-full object-cover transition-transform duration-300 transform group-hover:scale-110">
+                            <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <img src="https://cdn-icons-png.flaticon.com/512/2469/2469072.png" alt="Play Icon" class="w-20 h-20 play-icon">
+                            </div>
+                        </div>
+                        <div class="relative flex-shrink-0 w-64 md:w-72 group rounded-lg overflow-hidden movie-card cursor-pointer" data-title="Thunderbolts" data-poster="https://placehold.co/500x281/2e2e2e/ffffff?text=Thunderbolts" data-description="Uma equipe de anti-heróis é reunida pelo governo para missões perigosas." data-trailer-id="8MWjC7jv5qI" data-color-from="rgba(79, 70, 229, 0.7)" data-color-to="rgba(107, 114, 128, 0.8)">
+                            <img src="https://placehold.co/500x281/2e2e2e/ffffff?text=Thunderbolts" alt="Pôster de Thunderbolts" class="w-full h-full object-cover transition-transform duration-300 transform group-hover:scale-110">
+                            <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <img src="https://cdn-icons-png.flaticon.com/512/2469/2469072.png" alt="Play Icon" class="w-20 h-20 play-icon">
+                            </div>
+                        </div>
+                        <div class="relative flex-shrink-0 w-64 md:w-72 group rounded-lg overflow-hidden movie-card cursor-pointer" data-title="Como Treinar o seu Dragão" data-poster="https://placehold.co/500x281/3e3e3e/ffffff?text=Como+Treinar+o+seu+Dragão" data-description="A emocionante aventura de Soluço e Banguela ganha uma nova vida nesta adaptação live-action." data-trailer-id="AFZYCjGd1vA" data-color-from="rgba(14, 165, 233, 0.7)" data-color-to="rgba(16, 185, 129, 0.7)">
+                            <img src="https://placehold.co/500x281/3e3e3e/ffffff?text=Como+Treinar+o+seu+Dragão" alt="Pôster de Como Treinar o seu Dragão" class="w-full h-full object-cover transition-transform duration-300 transform group-hover:scale-110">
+                             <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <img src="https://cdn-icons-png.flaticon.com/512/2469/2469072.png" alt="Play Icon" class="w-20 h-20 play-icon">
+                            </div>
+                        </div>
+                         <div class="relative flex-shrink-0 w-64 md:w-72 group rounded-lg overflow-hidden movie-card cursor-pointer" data-title="Premonição 6" data-poster="https://placehold.co/500x281/4e4e4e/ffffff?text=Premonição+6" data-description="A morte não pode ser enganada. Um novo grupo de sobreviventes descobre que escapar do destino é apenas o começo." data-trailer-id="yayKH45FbFc" data-color-from="rgba(107, 114, 128, 0.7)" data-color-to="rgba(17, 24, 39, 0.8)">
+                            <img src="https://placehold.co/500x281/4e4e4e/ffffff?text=Premonição+6" alt="Pôster de Premonição 6" class="w-full h-full object-cover transition-transform duration-300 transform group-hover:scale-110">
+                             <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <img src="https://cdn-icons-png.flaticon.com/512/2469/2469072.png" alt="Play Icon" class="w-20 h-20 play-icon">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+        
+        <!-- Logo HypeMax para telas maiores -->
+        <div class="absolute top-8 left-24 md:left-28 lg:left-32 z-20">
+            <h1 class="text-4xl font-black tracking-tighter">
+                <span class="text-red-600">Hyper</span><span class="text-white">Max</span>
+            </h1>
+        </div>
+    </div>
+
+    <!-- Painel de Pesquisa -->
+    <div id="search-panel" class="fixed top-0 left-0 w-full md:w-1/3 h-full bg-gray-900/80 backdrop-blur-lg z-50 transform -translate-x-full transition-transform duration-300 ease-in-out p-6">
+        <button id="search-close-btn" class="absolute top-4 right-4 text-white hover:text-gray-300">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        <h2 class="text-2xl font-bold mb-6">Pesquisar</h2>
+        <input type="text" id="search-input" class="w-full bg-gray-700 text-white rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="Busque por filmes ou séries...">
+        <div id="search-results" class="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto max-h-[calc(100vh-150px)]">
+            <!-- Resultados da pesquisa aparecerão aqui -->
+        </div>
+    </div>
+
+    <!-- Painel de Detalhes Deslizante -->
+    <div id="details-panel" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-end transform translate-y-full transition-transform duration-500 ease-in-out">
+        <div id="details-panel-content" class="w-full bg-gray-900/80 backdrop-blur-lg rounded-t-2xl max-h-[85vh] overflow-y-auto p-8 relative">
+            <button id="details-close-btn" class="absolute top-4 right-4 text-white hover:text-gray-300 z-50">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <div id="main-details-view">
+                <div class="flex flex-col md:flex-row gap-8">
+                    <img id="details-poster" src="" alt="Pôster do filme" class="w-full md:w-1/3 h-auto object-cover rounded-lg">
+                    <div class="w-full md:w-2/3">
+                        <h2 id="details-title" class="text-4xl font-bold mb-4"></h2>
+                        <p id="details-description" class="text-lg text-gray-300 mb-6"></p>
+                        
+                        <!-- Seção de Temporadas -->
+                        <div id="seasons-section" class="hidden mb-6 relative">
+                            <button id="seasons-button" class="w-full flex justify-between items-center text-xl font-bold pb-2 border-b-2 border-gray-700 hover:border-white transition-colors">
+                                <span>Temporadas</span>
+                                <svg id="season-arrow" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform duration-300">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                            <ul id="seasons-list" class="hidden absolute w-full mt-2 bg-gray-800/95 backdrop-blur-sm rounded-lg p-2 z-10 space-y-1">
+                                <!-- Temporadas serão inseridas aqui pelo JS -->
+                            </ul>
+                        </div>
+
+                        <div id="trailer-container" class="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden relative">
+                            <!-- Trailer Poster Box -->
+                            <div id="details-trailer-box" class="w-full h-full bg-cover bg-center rounded-lg flex items-center justify-center cursor-pointer group transition-all duration-300">
+                                 <div class="w-20 h-20 bg-black bg-opacity-50 rounded-full flex items-center justify-center transition-transform duration-300 transform group-hover:scale-110">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/2469/2469072.png" alt="Play Icon" class="w-16 h-16 play-icon">
+                                 </div>
+                            </div>
+                            <!-- Iframe -->
+                            <iframe id="details-trailer" class="w-full h-full hidden" src="" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Visualização de Episódios -->
+            <div id="episodes-view" class="hidden">
+                 <button id="back-to-details-btn" class="flex items-center gap-2 text-lg font-bold mb-6 hover:text-red-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    Voltar
+                </button>
+                <h2 id="episodes-season-title" class="text-3xl font-bold mb-6"></h2>
+                <div id="episodes-list" class="space-y-4">
+                    <!-- Episódios serão inseridos aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Caixa com botão para download -->
+    <div id="download-box" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50">
+        <button class="w-12 h-12 rounded-full border-2 border-white bg-black bg-opacity-50 flex items-center justify-center text-white hover:bg-white hover:text-black transition-colors cursor-pointer" aria-label="Fazer download do site">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        </button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const episodesData = {
+                "Round 6": {
+                    1: [
+                        { title: "Batatinha Frita, 1, 2, 3", duration: "1h 2min" },
+                        { title: "Inferno", duration: "1h 1min" },
+                        { title: "O Homem do Guarda-Chuva", duration: "54min" },
+                        { title: "Não Saia da Fila", duration: "51min" },
+                        { title: "Um Mundo Justo", duration: "52min" },
+                        { title: "Gganbu", duration: "1h 3min" },
+                        { title: "VIPS", duration: "1h 11min" },
+                        { title: "O Líder", duration: "32min" },
+                        { title: "Um Dia de Sorte", duration: "1h" },
+                    ],
+                    2: Array.from({length: 9}, (_, i) => ({ title: `Episódio ${i + 1}`, duration: `${Math.floor(Math.random() * 15) + 45}min` })),
+                    3: Array.from({length: 9}, (_, i) => ({ title: `Episódio ${i + 1}`, duration: `${Math.floor(Math.random() * 15) + 45}min` })),
+                }
+            };
+            
+            const searchIcon = document.getElementById('search-icon');
+            const searchPanel = document.getElementById('search-panel');
+            const searchCloseBtn = document.getElementById('search-close-btn');
+            const searchInput = document.getElementById('search-input');
+            const searchResultsContainer = document.getElementById('search-results');
+            const allMovieCards = Array.from(document.querySelectorAll('.movie-card'));
+
+            searchIcon.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.body.classList.add('overflow-hidden');
+                searchPanel.classList.remove('-translate-x-full');
+                searchInput.focus();
+            });
+
+            searchCloseBtn.addEventListener('click', () => {
+                document.body.classList.remove('overflow-hidden');
+                searchPanel.classList.add('-translate-x-full');
+                searchInput.value = '';
+                searchResultsContainer.innerHTML = '';
+            });
+
+            const normalizeText = (text) => {
+                return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            };
+
+            searchInput.addEventListener('input', () => {
+                const query = normalizeText(searchInput.value);
+                searchResultsContainer.innerHTML = '';
+
+                if (query.length < 2) return;
+
+                const filteredMovies = allMovieCards.filter(card => normalizeText(card.dataset.title).includes(query));
+
+                filteredMovies.forEach(card => {
+                    const resultCard = document.createElement('div');
+                    resultCard.className = 'group movie-card cursor-pointer';
+                    Object.keys(card.dataset).forEach(key => {
+                        resultCard.dataset[key] = card.dataset[key];
+                    });
+                    
+                    resultCard.innerHTML = `
+                        <div class="relative rounded-lg overflow-hidden aspect-w-16 aspect-h-9">
+                            <img src="${card.dataset.poster}" alt="${card.dataset.title}" class="w-full h-full object-cover transition-transform duration-300 transform group-hover:scale-110">
+                            <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <img src="https://cdn-icons-png.flaticon.com/512/2469/2469072.png" alt="Play Icon" class="w-12 h-12 play-icon">
+                            </div>
+                        </div>
+                        <h4 class="mt-2 text-sm text-white truncate">${card.dataset.title}</h4>
+                    `;
+                    searchResultsContainer.appendChild(resultCard);
+                });
+                
+                addEventListenersToCards(searchResultsContainer.querySelectorAll('.movie-card'));
+            });
+
+            const detailsPanel = document.getElementById('details-panel');
+            const detailsPanelContent = document.getElementById('details-panel-content');
+            const detailsCloseBtn = document.getElementById('details-close-btn');
+            const detailsPoster = document.getElementById('details-poster');
+            const detailsTitle = document.getElementById('details-title');
+            const detailsDescription = document.getElementById('details-description');
+            const detailsTrailerBox = document.getElementById('details-trailer-box');
+            const detailsTrailer = document.getElementById('details-trailer');
+            const seasonsSection = document.getElementById('seasons-section');
+            const seasonsButton = document.getElementById('seasons-button');
+            const seasonsList = document.getElementById('seasons-list');
+            const seasonArrow = document.getElementById('season-arrow');
+            const mainDetailsView = document.getElementById('main-details-view');
+            const episodesView = document.getElementById('episodes-view');
+            const episodesList = document.getElementById('episodes-list');
+            const episodesSeasonTitle = document.getElementById('episodes-season-title');
+            const backToDetailsBtn = document.getElementById('back-to-details-btn');
+            const heroWatchButton = document.getElementById('hero-watch-button');
+            const heroContent = document.getElementById('hero-content');
+
+            function openDetailsPanel(card, directSeason = null) {
+                document.body.classList.add('overflow-hidden');
+                const title = card.dataset.title;
+                const poster = card.dataset.poster;
+                const description = card.dataset.description;
+                const trailerId = card.dataset.trailerId;
+                const colorFrom = card.dataset.colorFrom;
+                const colorTo = card.dataset.colorTo;
+                const seasons = card.dataset.seasons;
+                
+                detailsTitle.innerText = title;
+                detailsPoster.src = poster;
+                detailsDescription.innerText = description;
+                
+                detailsTrailerBox.style.backgroundImage = `url('${poster}')`;
+                detailsTrailerBox.dataset.trailerId = trailerId;
+
+                detailsTrailerBox.classList.remove('hidden');
+                detailsTrailer.classList.add('hidden');
+                
+                if (colorFrom && colorTo) {
+                    detailsPanelContent.style.background = `linear-gradient(to top right, ${colorFrom}, ${colorTo})`;
+                } else {
+                    detailsPanelContent.style.background = '';
+                }
+                
+                if (directSeason) {
+                    showEpisodes(title, directSeason);
+                } else {
+                    mainDetailsView.classList.remove('hidden');
+                    episodesView.classList.add('hidden');
+                    if (seasons) {
+                        seasonsSection.classList.remove('hidden');
+                        seasonsList.innerHTML = '';
+                        for (let i = 1; i <= parseInt(seasons, 10); i++) {
+                            const li = document.createElement('li');
+                            li.className = 'cascade-item opacity-0';
+                            li.style.animationDelay = `${i * 0.07}s`;
+                            li.innerHTML = `<a href="#" data-season-number="${i}" data-series-title="${title}" class="season-link block p-3 rounded-lg hover:bg-white/10 transition-colors text-gray-300 hover:text-white">Temporada ${i}</a>`;
+                            seasonsList.appendChild(li);
+                        }
+                        addSeasonLinkListeners();
+                    } else {
+                        seasonsSection.classList.add('hidden');
+                    }
+                    seasonsList.classList.add('hidden');
+                    seasonArrow.classList.remove('rotate-180');
+                }
+
+                detailsPanel.classList.remove('translate-y-full');
+            }
+            
+            function addEventListenersToCards(cards) {
+                cards.forEach(card => {
+                    card.addEventListener('click', () => {
+                        const directSeason = card.dataset.directSeason || null;
+                        openDetailsPanel(card, directSeason);
+                    });
+                });
+            }
+
+            function showEpisodes(seriesTitle, seasonNumber) {
+                const seriesData = episodesData[seriesTitle];
+                if (!seriesData || !seriesData[seasonNumber]) return;
+
+                episodesSeasonTitle.innerText = `${seriesTitle} - Temporada ${seasonNumber}`;
+                episodesList.innerHTML = '';
+                seriesData[seasonNumber].forEach((episode, index) => {
+                    const episodeEl = document.createElement('div');
+                    episodeEl.className = 'flex items-center gap-4 p-2 rounded-lg hover:bg-white/10';
+                    episodeEl.innerHTML = `
+                        <span class="text-2xl font-bold text-gray-400">${index + 1}</span>
+                        <img src="https://placehold.co/128x72/1a1a1a/ffffff?text=${seriesTitle}" class="w-32 h-auto rounded-md">
+                        <div>
+                            <h4 class="font-bold">${episode.title}</h4>
+                            <p class="text-sm text-gray-400">${episode.duration}</p>
+                        </div>
+                    `;
+                    episodesList.appendChild(episodeEl);
+                });
+
+                mainDetailsView.classList.add('hidden');
+                episodesView.classList.remove('hidden');
+            }
+            
+            function addSeasonLinkListeners(){
+                document.querySelectorAll('.season-link').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const seriesTitle = e.currentTarget.dataset.seriesTitle;
+                        const seasonNumber = e.currentTarget.dataset.seasonNumber;
+                        showEpisodes(seriesTitle, seasonNumber);
+                    });
+                });
+            }
+
+            addEventListenersToCards(allMovieCards);
+            
+            heroWatchButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // Impede que o evento de clique se propague para o hero-content
+                openDetailsPanel(heroContent);
+            });
+
+            detailsTrailerBox.addEventListener('click', function() {
+                const trailerId = this.dataset.trailerId;
+                if (trailerId) {
+                    detailsTrailer.src = `https://www.youtube.com/embed/${trailerId}?autoplay=1`;
+                    this.classList.add('hidden');
+                    detailsTrailer.classList.remove('hidden');
+                }
+            });
+
+            seasonsButton.addEventListener('click', () => {
+                seasonsList.classList.toggle('hidden');
+                seasonArrow.classList.toggle('rotate-180');
+            });
+            
+            backToDetailsBtn.addEventListener('click', () => {
+                mainDetailsView.classList.remove('hidden');
+                episodesView.classList.add('hidden');
+            });
+
+            const closePanel = () => {
+                document.body.classList.remove('overflow-hidden');
+                detailsPanel.classList.add('translate-y-full');
+                detailsTrailer.src = '';
+                detailsPanelContent.style.background = '';
+                detailsTrailerBox.classList.remove('hidden');
+                detailsTrailer.classList.add('hidden');
+                seasonsSection.classList.add('hidden');
+                seasonArrow.classList.remove('rotate-180');
+            };
+
+            detailsCloseBtn.addEventListener('click', closePanel);
+            
+            detailsPanel.addEventListener('click', (event) => {
+                if (event.target === detailsPanel) {
+                    closePanel();
+                }
+            });
+
+            const downloadButton = document.querySelector('#download-box button');
+            if (downloadButton) {
+                downloadButton.addEventListener('click', () => {
+                    const pageHTML = document.documentElement.outerHTML;
+                    const blob = new Blob([pageHTML], { type: 'text/html' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = 'HypeMax.html';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                });
+            }
+        });
+    </script>
+
+
+
+</body></html>

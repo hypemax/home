@@ -1,0 +1,1 @@
+O arquivo favicon.ico original não pôde ser incluído no ZIP por limitações técnicas. Por favor, use o seu arquivo original que você enviou.
